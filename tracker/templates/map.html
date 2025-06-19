@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Cambodia Road Router</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" integrity="sha512-z3gLpd7yknf1YoNbCzqRKc4qyor8gaKU1qmn+CShxbuBusANI9QpRohGBreCFkKxLhei6S9CQXFEbbKuqLg0DA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+      body { margin: 0; font-family: "Inter", "Segoe UI", sans-serif; background-color: #f8fafc; }
+      #map { height: calc(100vh - 120px); width: 100%; z-index: 1; }
+      #custom-compass { transform: rotate(0deg); transition: transform 0.2s ease-in-out; }
+      .controls { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 1000; background-color: white; padding: 12px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); max-width: 90%; width: 600px; }
+      .search-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-bottom: 8px; position: relative; }
+      .coord-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; }
+      .controls input { padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; transition: border-color 0.3s; }
+      .controls input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+      .controls input.invalid { border-color: #ef4444; }
+      .controls button { padding: 8px 16px; background-color: #3b82f6; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background-color 0.3s; }
+      .controls button:hover:not(:disabled) { background-color: #2563eb; }
+      .controls button:disabled { background-color: #93c5fd; cursor: not-allowed; }
+      .suggestions { position: absolute; top: 100%; left: 0; right: 0; background-color: white; border: 1px solid #d1d5db; border-radius: 6px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); z-index: 1001; max-height: 200px; overflow-y: auto; display: none; }
+      .suggestion-item { padding: 8px; font-size: 14px; cursor: pointer; transition: background-color 0.2s; }
+      .suggestion-item:hover { background-color: #f1f5f9; }
+      .info-box { position: fixed; bottom: 20px; right: 20px; background-color: white; padding: 12px 16px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); z-index: 1000; font-size: 14px; max-width: 300px; width: 90%; transition: transform 0.3s ease-out; }
+      .info-box.hidden { transform: translateY(100px); }
+      .info-box .travel-times { display: grid; grid-template-columns: auto 1fr; gap: 8px; margin-top: 8px; align-items: center; }
+      .info-box .travel-times .label { display: flex; align-items: center; gap: 6px; font-weight: 600; color: #374151; }
+      .info-box .travel-times .label i { font-size: 16px; color: #1a73e8; width: 16px; text-align: center; }
+      .info-box .travel-times .value { text-align: right; color: #1f2937; }
+      .info-box .travel-times .value .speed { display: block; font-size: 12px; color: #6b7280; }
+      .toast { position: fixed; top: 20px; right: 20px; background-color: #fef08a; padding: 12px 16px; border-radius: 8px; font-size: 14px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); z-index: 1001; display: flex; align-items: center; gap: 10px; transition: opacity 0.3s, transform 0.3s; }
+      .toast.hidden { opacity: 0; transform: translateY(-20px); }
+      .toast button { background: none; border: none; font-size: 16px; cursor: pointer; color: #4b5563; }
+      @media (max-width: 640px) { .controls { top: 5px; width: 95%; } .search-row { grid-template-columns: 1fr; } .coord-controls { grid-template-columns: 1fr; } .suggestions { width: 100%; } .info-box { bottom: 10px; right: 10px; max-width: 80%; } .info-box .travel-times { grid-template-columns: 1fr; gap: 6px; } .info-box .travel-times .value { text-align: left; } .info-box .travel-times .label i { font-size: 14px; } .info-box .travel-times .value .speed { font-size: 11px; } .toast { top: 10px; right: 10px; max-width: 80%; } }
+      .leaflet-div-icon { font-size: 16px; font-weight: bold; text-shadow: 0 0 5px rgba(255, 255, 255, 0.8); }
+      .animate-spin { animation: spin 1s linear infinite; }
+      @keyframes spin { 100% { transform: rotate(360deg); } }
+    </style>
+  </head>
+  <body>
+    <div id="toast" class="toast">
+      Click map to set start (A) and end (B) points. Drag to adjust.
+      <button onclick="dismissToast()">✕</button>
+    </div>
+    <div id="custom-compass" class="fixed top-4 right-4 z-[1000] w-16 h-16 rounded-full bg-white shadow-lg flex items-center justify-center border border-gray-300">
+      <div id="needle" class="w-2 h-8 bg-red-600 rounded-full origin-bottom"></div>
+    </div>
+    <div class="controls">
+      <div class="search-row">
+        <input id="search-input" placeholder="Search location (e.g., Phnom Penh)" aria-label="Search location" />
+        <button onclick="searchLocation(document.getElementById('search-input').value, clickStep === 0 ? 'start' : 'end')" aria-label="Search location">Search</button>
+        <div id="suggestions" class="suggestions"></div>
+      </div>
+      <div class="coord-controls">
+        <input id="start-lat" placeholder="Start Lat" type="number" step="any" aria-label="Start Latitude" />
+        <input id="start-lon" placeholder="Start Lon" type="number" step="any" aria-label="Start Longitude" />
+        <input id="end-lat" placeholder="End Lat" type="number" step="any" aria-label="End Latitude" />
+        <input id="end-lon" placeholder="End Lon" type="number" step="any" aria-label="End Longitude" />
+        <button id="route-button" onclick="getRoute()" aria-label="Get route">Get Route</button>
+        <button onclick="resetMap()" aria-label="Reset map">Reset</button>
+      </div>
+    </div>
+    <div id="map"></div>
+    <div id="info" class="info-box hidden"></div>
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-compass/dist/leaflet-compass.min.js"></script>
+    <script>
+      const map = L.map("map").setView([11.5449, 104.8922], 7);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 18,
+        attribution: "© OpenStreetMap contributors",
+      }).addTo(map);
+
+      // Initialize compass control
+      const compassControl = new L.Control.Compass({ autoActive: true, showDigit: true });
+      map.addControl(compassControl);
+
+      let startMarker = null;
+      let endMarker = null;
+      let routeLayer = null;
+      let roadLayer = null;
+      let clickStep = 0;
+      let debounceTimeout = null;
+
+      const markerIcons = {
+        start: L.divIcon({
+          html: '<b style="color:#dc2626;">A</b>',
+          className: "leaflet-div-icon",
+        }),
+        end: L.divIcon({
+          html: '<b style="color:#16a34a;">B</b>',
+          className: "leaflet-div-icon",
+        }),
+      };
+
+      // Road type speed ranges (km/h) with min/max
+      const roadTypeSpeeds = {
+        car: {
+          highway: { min: 70, max: 80 },
+          arterial: { min: 40, max: 50 },
+          local: { min: 25, max: 30 },
+          path: { min: 15, max: 20 },
+        },
+        motorcycle: {
+          highway: { min: 60, max: 70 },
+          arterial: { min: 40, max: 50 },
+          local: { min: 25, max: 30 },
+          path: { min: 10, max: 15 },
+        },
+        bicycle: {
+          highway: { min: 15, max: 20 },
+          arterial: { min: 12, max: 15 },
+          local: { min: 10, max: 12 },
+          path: { min: 8, max: 10 },
+        },
+        walking: {
+          highway: { min: 4, max: 5 },
+          arterial: { min: 4, max: 5 },
+          local: { min: 3.5, max: 4 },
+          path: { min: 2.5, max: 3 },
+        },
+      };
+
+      // Helper function to get congestion factor based on time of day
+      function getCongestionFactor() {
+        const now = new Date();
+        const hours = now.getHours();
+        if ((hours >= 7 && hours < 9) || (hours >= 17 && hours < 19)) {
+          return 0.8; // 20% slower during peak
+        }
+        return 1.0; // Off-peak
+      }
+
+      // Helper function to estimate segments if not provided
+      function estimateSegments(totalDistanceKm) {
+        if (totalDistanceKm < 2) {
+          return [{ distance_kilometers: totalDistanceKm, road_type: "local" }];
+        } else if (totalDistanceKm < 10) {
+          return [
+            { distance_kilometers: totalDistanceKm * 0.5, road_type: "arterial" },
+            { distance_kilometers: totalDistanceKm * 0.5, road_type: "local" },
+          ];
+        } else {
+          return [
+            { distance_kilometers: totalDistanceKm * 0.6, road_type: "highway" },
+            { distance_kilometers: totalDistanceKm * 0.3, road_type: "arterial" },
+            { distance_kilometers: totalDistanceKm * 0.1, road_type: "local" },
+          ];
+        }
+      }
+
+      // Helper function to format duration
+      function formatDuration(minutes) {
+        if (isNaN(minutes) || minutes < 0) return "N/A";
+        if (minutes < 60) return `${Math.max(1, Math.ceil(minutes))} min`;
+        const hours = Math.ceil(minutes / 60);
+        return `${hours}h`;
+      }
+
+      // Helper function to format speed
+      function formatSpeed(distanceKm, minutes) {
+        if (isNaN(distanceKm) || isNaN(minutes) || minutes <= 0 || distanceKm < 0) return "N/A";
+        const hours = minutes / 60;
+        const speed = distanceKm / hours;
+        return `${speed.toFixed(1)} km/h`;
+      }
+
+      // Helper function to adjust travel time for a segment
+      function adjustTravelTime(distanceKm, mode, roadType, totalDistanceKm) {
+        if (!roadTypeSpeeds[mode][roadType] || isNaN(distanceKm)) return null;
+        const speedRange = roadTypeSpeeds[mode][roadType];
+        const speed = totalDistanceKm < 2 || roadType === "path" ? speedRange.min : speedRange.max;
+        const congestionFactor = roadType === "highway" ? 1.0 : getCongestionFactor();
+        const adjustedSpeed = speed * congestionFactor;
+        const hours = distanceKm / adjustedSpeed;
+        return hours * 60; // Convert to minutes
+      }
+
+      // Load road network with improved error handling
+      fetch("/roads/")
+        .then((res) => {
+          console.log(`Roads request status: ${res.status}`);
+          if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+          return res.json();
+        })
+        .then((data) => {
+          console.log("Roads response:", data);
+          if (!Array.isArray(data)) {
+            console.error("Roads error: Expected array, got", data);
+            let errorMsg = "Failed to load roads: Invalid data format";
+            if (data && data.error) errorMsg = `Failed to load roads: ${data.error}`;
+            showInfo(errorMsg);
+            return;
+          }
+          if (data.length === 0) {
+            console.warn("Roads response: Empty array");
+            showInfo("No road data available, but routing is still functional.");
+            return;
+          }
+          if (roadLayer) map.removeLayer(roadLayer);
+          roadLayer = L.layerGroup();
+          data.forEach((road, index) => {
+            if (road.path && Array.isArray(road.path)) {
+              L.polyline(road.path, { color: "#6b7280", weight: 2 }).addTo(roadLayer);
+            } else console.warn(`Invalid road path at index ${index}:`, road);
+          });
+          roadLayer.addTo(map);
+          console.log(`Loaded ${data.length} road segments`);
+        })
+        .catch((err) => {
+          console.error("Failed to load roads:", err.message);
+          showInfo(`Failed to load roads: ${err.message}`);
+        });
+
+      map.on("click", (e) => {
+        console.log("Map clicked at", e.latlng);
+        if (clickStep === 0) {
+          placeMarker(e.latlng, "start");
+          clickStep = 1;
+        } else {
+          placeMarker(e.latlng, "end");
+          clickStep = 0;
+        }
+      });
+
+      function placeMarker(latlng, type) {
+        console.log("Placing marker at", latlng, type);
+        if (!latlng || typeof latlng.lat !== "number" || typeof latlng.lng !== "number") {
+          console.error("Invalid latlng:", latlng);
+          showInfo("Error placing marker: Invalid coordinates.");
+          return;
+        }
+        const idLat = `${type}-lat`;
+        const idLon = `${type}-lon`;
+        const latInput = document.getElementById(idLat);
+        const lonInput = document.getElementById(idLon);
+        latInput.value = latlng.lat.toFixed(6);
+        lonInput.value = latlng.lng.toFixed(6);
+        latInput.classList.remove("invalid");
+        lonInput.classList.remove("invalid");
+        const marker = L.marker(latlng, { draggable: true, icon: markerIcons[type] }).addTo(map);
+        marker.on("dragend", (e) => {
+          const pos = e.target.getLatLng();
+          latInput.value = pos.lat.toFixed(6);
+          lonInput.value = pos.lng.toFixed(6);
+        });
+        if (type === "start") {
+          if (startMarker) try { map.removeLayer(startMarker); } catch (e) { console.error("Error removing start marker:", e); }
+          startMarker = marker;
+        } else {
+          if (endMarker) try { map.removeLayer(endMarker); } catch (e) { console.error("Error removing end marker:", e); }
+          endMarker = marker;
+        }
+      }
+
+      async function searchLocation(query, type, retryCount = 0) {
+        if (!query.trim()) {
+          showInfo("Please enter a location name.");
+          return;
+        }
+        showLoading();
+        try {
+          const url = `/search/?q=${encodeURIComponent(query.trim())}&limit=1`;
+          console.log(`Sending search request: ${url}`);
+          const response = await fetch(url);
+          console.log(`Search status: ${response.status}`);
+          if (!response.ok) {
+            if (response.status === 429 && retryCount < 3) {
+              const delay = Math.pow(2, retryCount) * 1000;
+              console.warn(`Rate limit hit (429). Retrying after ${delay}ms...`);
+              await new Promise((resolve) => setTimeout(resolve, delay));
+              return searchLocation(query, type, retryCount + 1);
+            }
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+          }
+          const data = await response.json();
+          hideLoading();
+          document.getElementById("suggestions").style.display = "none";
+          console.log("Search response:", data);
+          if (data.error) {
+            showInfo(`Search error: ${data.error}`);
+            return;
+          }
+          if (!data.length || !data[0].lat || !data[0].lon) {
+            showInfo("Location not found or invalid response.");
+            return;
+          }
+          const lat = parseFloat(data[0].lat);
+          const lon = parseFloat(data[0].lon);
+          if (isNaN(lat) || isNaN(lon)) {
+            showInfo("Invalid coordinates in search response.");
+            return;
+          }
+          if (!validateCoordinates(lat, lon)) {
+            showInfo("Location must be within Cambodia (10–14.5°N, 102–108°E).");
+            return;
+          }
+          const latlng = L.latLng(lat, lon);
+          placeMarker(latlng, type);
+          map.setView([lat, lon], 12);
+          document.getElementById("search-input").value = "";
+        } catch (err) {
+          hideLoading();
+          document.getElementById("suggestions").style.display = "none";
+          console.error("Search error:", err.message);
+          showInfo(`Error searching location: ${err.message}`);
+        }
+      }
+
+      async function fetchSuggestions(query) {
+        if (!query.trim() || query.length < 3) {
+          document.getElementById("suggestions").style.display = "none";
+          return;
+        }
+        showLoading();
+        try {
+          const url = `/search/?q=${encodeURIComponent(query.trim())}&limit=5`;
+          console.log(`Sending suggestions request: ${url}`);
+          const response = await fetch(url);
+          console.log(`Suggestions status: ${response.status}`);
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+          }
+          const data = await response.json();
+          hideLoading();
+          const suggestionsDiv = document.getElementById("suggestions");
+          suggestionsDiv.innerHTML = "";
+          console.log("Suggestions response:", data);
+          if (data.error) {
+            showInfo(`Suggestions error: ${data.error}`);
+            suggestionsDiv.style.display = "none";
+            return;
+          }
+          if (!data.length) {
+            suggestionsDiv.style.display = "none";
+            return;
+          }
+          data.forEach((item) => {
+            const div = document.createElement("div");
+            div.className = "suggestion-item";
+            div.textContent = item.display_name;
+            div.onclick = () => selectSuggestion(item.display_name, clickStep === 0 ? "start" : "end");
+            suggestionsDiv.appendChild(div);
+          });
+          suggestionsDiv.style.display = "block";
+        } catch (err) {
+          hideLoading();
+          document.getElementById("suggestions").style.display = "none";
+          console.error("Suggestions error:", err.message);
+          showInfo(`Error fetching suggestions: ${err.message}`);
+        }
+      }
+
+      function selectSuggestion(query, type) {
+        document.getElementById("search-input").value = query;
+        document.getElementById("suggestions").style.display = "none";
+        searchLocation(query, type);
+      }
+
+      document.getElementById("search-input").addEventListener("input", function (e) {
+        clearTimeout(debounceTimeout);
+        debounceTimeout = setTimeout(() => fetchSuggestions(e.target.value), 1000);
+      });
+
+      document.addEventListener("click", function (e) {
+        if (!e.target.closest(".search-row")) document.getElementById("suggestions").style.display = "none";
+      });
+
+      function validateCoordinates(lat, lon) {
+        const latBounds = [10, 14.5];
+        const lonBounds = [102, 108];
+        return lat >= latBounds[0] && lat <= latBounds[1] && lon >= lonBounds[0] && lon <= lonBounds[1];
+      }
+
+      function showLoading() {
+        const infoBox = document.getElementById("info");
+        infoBox.innerHTML = '<div class="flex items-center gap-2"><svg class="animate-spin h-5 w-5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="#d1d5db" stroke-width="4" fill="none" /><path fill="#3b82f6" d="M4 12a4 4 0 014-4" /></svg>Loading...</div>';
+        infoBox.classList.remove("hidden");
+      }
+
+      function hideLoading() {
+        document.getElementById("info").classList.add("hidden");
+      }
+
+      function getRoute() {
+        const routeButton = document.getElementById("route-button");
+        routeButton.disabled = true;
+        routeButton.textContent = "Loading...";
+        const inputs = {
+          startLat: document.getElementById("start-lat"),
+          startLon: document.getElementById("start-lon"),
+          endLat: document.getElementById("end-lat"),
+          endLon: document.getElementById("end-lon"),
+        };
+        const coords = {
+          startLat: parseFloat(inputs.startLat.value),
+          startLon: parseFloat(inputs.startLon.value),
+          endLat: parseFloat(inputs.endLat.value),
+          endLon: parseFloat(inputs.endLon.value),
+        };
+        let valid = true;
+        Object.keys(inputs).forEach((key) => {
+          inputs[key].classList.remove("invalid");
+          if (isNaN(coords[key])) {
+            inputs[key].classList.add("invalid");
+            valid = false;
+          }
+        });
+        if (!valid) {
+          showInfo("Please enter valid coordinates.");
+          routeButton.disabled = false;
+          routeButton.textContent = "Get Route";
+          return;
+        }
+        if (!validateCoordinates(coords.startLat, coords.startLon) || !validateCoordinates(coords.endLat, coords.endLon)) {
+          showInfo("Coordinates must be within Cambodia (10–14.5°N, 102–108°E).");
+          Object.keys(inputs).forEach((key) => inputs[key].classList.add("invalid"));
+          routeButton.disabled = false;
+          routeButton.textContent = "Get Route";
+          return;
+        }
+        showLoading();
+        const url = `/distance/?start_lat=${coords.startLat}&start_lon=${coords.startLon}&end_lat=${coords.endLat}&end_lon=${coords.endLon}`;
+        console.log(`Sending route request: ${url}`);
+        fetch(url)
+          .then((res) => {
+            if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+            return res.json();
+          })
+          .then((data) => {
+            hideLoading();
+            routeButton.disabled = false;
+            routeButton.textContent = "Get Route";
+            console.log("Route response:", data);
+            if (data.error || data.message) {
+              showInfo(`Error: ${data.message || data.error}`);
+              return;
+            }
+            if (!data.distance_kilometers) {
+              showInfo(`<div><strong>Distance:</strong><br />No distance data available</div>`);
+              return;
+            }
+            const path = data.path.map((p) => [p[0], p[1]]);
+            if (routeLayer) map.removeLayer(routeLayer);
+            routeLayer = L.polyline(path, { color: "#ff0000", weight: 5, opacity: 0 }).addTo(map);
+            let i = 0;
+            const animate = () => {
+              if (i <= 1) {
+                routeLayer.setStyle({ opacity: i });
+                i += 0.05;
+                requestAnimationFrame(animate);
+              }
+            };
+            animate();
+            map.fitBounds(routeLayer.getBounds());
+
+            const segments = data.segments && Array.isArray(data.segments) ? data.segments : estimateSegments(data.distance_kilometers);
+            const adjustedTimes = { car: 0, motorcycle: 0, bicycle: 0, walking: 0 };
+            segments.forEach((segment) => {
+              ["car", "motorcycle", "bicycle", "walking"].forEach((mode) => {
+                const time = adjustTravelTime(segment.distance_kilometers, mode, segment.road_type || "local", data.distance_kilometers);
+                if (time !== null) adjustedTimes[mode] += time;
+              });
+            });
+
+            showInfo(`
+              <div>
+                <strong>Distance:</strong><br />
+                ${data.distance_kilometers} km (${data.distance_meters} meters)
+                <div class="travel-times">
+                  <span class="label"><i class="fas fa-car"></i> Driving</span>
+                  <span class="value">${formatDuration(adjustedTimes.car)}<span class="speed">${formatSpeed(data.distance_kilometers, adjustedTimes.car)}</span></span>
+                  <span class="label"><i class="fas fa-motorcycle"></i> Motorcycle</span>
+                  <span class="value">${formatDuration(adjustedTimes.motorcycle)}<span class="speed">${formatSpeed(data.distance_kilometers, adjustedTimes.motorcycle)}</span></span>
+                  <span class="label"><i class="fas fa-bicycle"></i> Cycling</span>
+                  <span class="value">${formatDuration(adjustedTimes.bicycle)}<span class="speed">${formatSpeed(data.distance_kilometers, adjustedTimes.bicycle)}</span></span>
+                  <span class="label"><i class="fas fa-person-walking"></i> Walking</span>
+                  <span class="value">${formatDuration(adjustedTimes.walking)}<span class="speed">${formatSpeed(data.distance_kilometers, adjustedTimes.walking)}</span></span>
+                </div>
+              </div>
+            `);
+          })
+          .catch((err) => {
+            hideLoading();
+            routeButton.disabled = false;
+            routeButton.textContent = "Get Route";
+            console.error("Route error:", err.message);
+            showInfo(`Error computing route: ${err.message}`);
+          });
+      }
+
+      function resetMap() {
+        if (startMarker) try { map.removeLayer(startMarker); } catch (e) { console.error("Error removing start marker:", e); }
+        if (endMarker) try { map.removeLayer(endMarker); } catch (e) { console.error("Error removing end marker:", e); }
+        if (routeLayer) map.removeLayer(routeLayer);
+        startMarker = endMarker = routeLayer = null;
+        clickStep = 0;
+        ["start-lat", "start-lon", "end-lat", "end-lon"].forEach((id) => {
+          const input = document.getElementById(id);
+          input.value = "";
+          input.classList.remove("invalid");
+        });
+        document.getElementById("search-input").value = "";
+        document.getElementById("suggestions").style.display = "none";
+        showInfo("", true);
+      }
+
+      function showInfo(message, hide = false) {
+        const infoBox = document.getElementById("info");
+        infoBox.innerHTML = message || "";
+        infoBox.classList.toggle("hidden", hide || !message);
+      }
+
+      function dismissToast() {
+        document.getElementById("toast").classList.add("hidden");
+      }
+
+      setTimeout(dismissToast, 5000);
+    </script>
+  </body>
+</html>
+

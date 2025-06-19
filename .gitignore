@@ -1,0 +1,117 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+*.egg-info/
+dist/
+build/
+*.egg
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache/
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+*.so
+
+# Django
+*.log
+local_settings.py
+settings.py[c]
+db.sqlite3
+media/
+staticfiles/
+*.bak
+*.swp
+*.swo
+migrations/__pycache__/
+migrations/*.py[cod]
+migrations/*.pyo
+
+# RoadGraph Cache Files
+caches/
+road_graph_cache.pkl
+caches/rtree_data/
+*.dat
+*.idx
+
+# JavaScript/Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+yarn.lock
+dist/
+build/
+*.min.js.map
+*.bundle.js
+coverage/
+
+# IDE and Editor Files
+.idea/
+*.iml
+.vscode/
+*.sublime-project
+*.sublime-workspace
+.DS_Store
+*.swp
+*~
+.#*
+
+# Environment and Secrets
+.env
+*.env
+*.secret
+*.key
+credentials.json
+secrets.json
+*.pem
+*.crt
+*.key
+
+# System Files
+Thumbs.db
+ehthumbs.db
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# Testing and Debugging
+*.prof
+*.dump
+*.crash
+*.trace
+*.log.gz
+debug.log
+
+# Miscellaneous
+*.tmp
+*.temp
+*.zip
+*.tar.gz
+*.rar
+*.tgz
+*.bak
+
+# Project-Specific
+cache/    # Django cache directory
+logs/     # Generated log files
+
+# Exclude Specific Files
+data/cambodia.osmdata/cambodia.osm
+caches/rtree_data/
+data/cambodia.osm
+caches/rtree_data/
