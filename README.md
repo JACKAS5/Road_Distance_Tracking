@@ -21,7 +21,7 @@ Internet access for OpenStreetMap tiles and Nominatim API
 Installation
 
 Clone the Repository:
-git clone https://github.com/your-username/cambodia-road-router.git
+git clone https://github.com/JACKAS5/Road_Distance_Tracking.git
 cd cambodia-road-router/ROAD_TRACKING_PROJECT
 
 
@@ -141,23 +141,3 @@ Django Backend: Provides APIs (/roads/, /distance/, /search/) with caching and i
 JavaScript Frontend: Uses Leaflet in templates/map.html for mapping, with draggable markers, animated routes, and real-time search suggestions. Adjusts travel times based on road types and congestion.
 Initial Build: On first run, RoadGraph parses cambodia.osm, generating cache files in caches/, which are ignored by .gitignore.
 
-Contributing
-
-Fork the repository.
-Create a feature branch (git checkout -b feature/your-feature).
-Commit changes (git commit -m "Add your feature").
-Push to the branch (git push origin feature/your-feature).
-Open a pull request.
-
-License
-MIT License. See LICENSE file for details.
-Acknowledgments
-
-OpenStreetMap for map data and tiles.
-Nominatim for geocoding services.
-Leaflet for interactive mapping.
-
-Contact
-For issues or questions, open a GitHub issue or email your-email@example.com.
-Last Updated
-04:52 PM +07, Thursday, June 19, 2025
