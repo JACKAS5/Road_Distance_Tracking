@@ -98,10 +98,9 @@ Open http://localhost:8000/ to access the map interface ```(templates/map.html)`
 
 ### 🗺 Usage
 ### 1. ** View Roads **
+ - Map loads road segments from RoadGraph within Cambodia bounds.
 
-    - Map loads road segments from RoadGraph within Cambodia bounds.
-
-    - Explore by zooming and panning.
+ - Explore by zooming and panning.
 
 2. ** Search Locations **
 
