@@ -97,32 +97,32 @@ Open http://localhost:8000/ to access the map interface ```(templates/map.html)`
 ---
 
 ### 🗺 Usage
-### 1. ** View Roads **
+### 1. View Roads 
  - Map loads road segments from RoadGraph within Cambodia bounds.
 
  - Explore by zooming and panning.
 
-2. ** Search Locations **
+### 2. Search Locations
 
-- Enter queries (e.g., "Phnom Penh") in the search bar.
+ - Enter queries (e.g., "Phnom Penh") in the search bar.
 
-- Select suggestions to place markers (start or end points).
+ - Select suggestions to place markers (start or end points).
 
-3. ** Set Route Points **
+### 3. Set Route Points
 
-- Click map to set start (A) and end (B) points.
+ - Click map to set start (A) and end (B) points.
 
-- Drag markers to adjust positions.
+ - Drag markers to adjust positions.
 
-4. ** Calculate Route **
+### 4. Calculate Route
 
-- Click Get Route to compute the shortest path.
+ - Click Get Route to compute the shortest path.
 
-- View distance and travel times for all travel modes.
+ - View distance and travel times for all travel modes.
 
-5. ** Reset Map **
+### 5. Reset Map
 
-- Click Reset to clear markers, routes, and inputs.
+ - Click Reset to clear markers, routes, and inputs.
 
 ---
 
