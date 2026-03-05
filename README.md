@@ -1,49 +1,76 @@
-Cambodia Road Router
-The Cambodia Road Router is a web-based application for visualizing road networks, calculating shortest paths, and searching locations within Cambodia using OpenStreetMap (OSM) data. It integrates a Python-based RoadGraph class for graph processing, a Django backend for API services, and a Leaflet-based JavaScript frontend for interactive mapping. The application supports routing for various travel modes (car, motorcycle, bicycle, walking) with realistic travel time estimates.
-Features
+# 🌐 Cambodia Road Router
 
-Road Network Visualization: Displays road segments within a bounding box using RoadGraph’s R-tree index.
-Shortest Path Routing: Computes optimal routes using Dijkstra’s algorithm, with distances and travel times adjusted for road types and congestion.
-Location Search: Integrates Nominatim API for searching locations, filtered to Cambodia (10–14.5°N, 102–108°E).
-Interactive Map: Leaflet-based frontend with draggable markers, real-time suggestions, and animated route rendering.
-Caching: Optimizes performance with Django cache for API responses and RoadGraph cache for graph data.
-Robust Error Handling: Validates inputs, handles API errors, and provides user-friendly feedback.
+**Cambodia Road Router** is a web-based application for visualizing road networks, calculating shortest paths, and searching locations within Cambodia using **OpenStreetMap (OSM)** data. It integrates:
 
-Prerequisites
+- **Python** (`RoadGraph` class) for graph processing.
+- **Django** backend for API services.
+- **Leaflet.js** frontend for interactive mapping.
 
-Python 3.8+
-Django 4.0+
-PostgreSQL (optional, for production; SQLite used by default)
-Node.js (optional, if extending frontend with npm)
-OSM file for Cambodia (.osm format, provided as data/cambodia.osm)
-Internet access for OpenStreetMap tiles and Nominatim API
+The application supports multiple travel modes (car, motorcycle, bicycle, walking) with realistic travel time estimates.
 
-Installation
+---
 
-Clone the Repository:
+## 🚀 Features
+
+1. **Road Network Visualization**  
+   - Displays road segments within a bounding box using **RoadGraph**’s R-tree index.
+   - Interactive map supports zooming and panning.
+
+2. **Shortest Path Routing**  
+   - Computes optimal routes using **Dijkstra’s algorithm**.
+   - Distance and travel time are adjusted based on road types and congestion levels.
+
+3. **Location Search**  
+   - Integrates **Nominatim API** for geocoding.
+   - Results are filtered to Cambodia (`10–14.5°N, 102–108°E`).
+
+4. **Interactive Map**  
+   - Leaflet-based frontend with draggable markers.
+   - Real-time search suggestions and animated route rendering.
+
+5. **Caching**  
+   - **Django cache** for API responses.  
+   - **RoadGraph cache** for graph data to reduce load time.
+
+6. **Robust Error Handling**  
+   - Input validation and API error handling.
+   - User-friendly feedback messages.
+
+---
+
+## 🛠 Prerequisites
+
+- **Python 3.8+**
+- **Django 4.0+**
+- **PostgreSQL** (optional; SQLite used by default)
+- **Node.js** (optional, for frontend npm extensions)
+- **OSM file** for Cambodia (`data/cambodia.osm`)
+- Internet access for **OpenStreetMap tiles** and **Nominatim API**
+
+---
+
+## ⚡ Installation
+
+### 1. Clone the Repository
+```bash
 git clone https://github.com/JACKAS5/Road_Distance_Tracking.git
 cd cambodia-road-router/ROAD_TRACKING_PROJECT
+```
 
-
-Set Up Virtual Environment:
+### 2. Set Up Virtual Environment
+```bash
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate   # Windows: venv\Scripts\activate
+```
 
-
-Install Python Dependencies:
+### 3. Install Python Dependencies
+```bash
 pip install -r requirements.txt
-
-Example requirements.txt (to be created if not present):
-django==4.2
-requests==2.31.0
-scipy==1.10.1
-rtree==1.0.1
-shapely==2.0.1
-
-
-Configure Django Settings:
-
-Update ROAD_TRACKING_PROJECT/settings.py with:ROAD_GRAPH_CACHE_PATH = 'caches/road_graph_cache.pkl'
+```
+### 4. Configure Django Settings
+Update ```ROAD_TRACKING_PROJECT/settings.py```:
+```python
+ROAD_GRAPH_CACHE_PATH = 'caches/road_graph_cache.pkl'
 OSM_FILE_PATH = 'data/cambodia.osm'
 NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search'
 NOMINATIM_USER_AGENT = 'CambodiaRoadRouter/1.0'
@@ -52,92 +79,100 @@ CAMBODIA_BOUNDS = {
     'min_lat': 10.0, 'max_lat': 14.5,
     'min_lon': 102.0, 'max_lon': 108.0
 }
+```
+Ensure ```data/cambodia.osm``` exists in the ```data/``` directory.
 
-
-Ensure data/cambodia.osm exists (already included in the repo).
-
-
-Run Django Migrations:
+### 5. Run Migrations
+```bash
 python manage.py migrate
+```
 
-
-Start the Django Server:
+### 6. Start the Server
+```bash
 python manage.py runserver
+```
 
+Open http://localhost:8000/ to access the map interface ```(templates/map.html)```.
 
-Access the Application:
+---
 
-Open http://localhost:8000 in a browser to view the map interface at templates/map.html.
+### 🗺 Usage
+1. ** View Roads **
 
+- Map loads road segments from RoadGraph within Cambodia bounds.
 
+- Explore by zooming and panning.
 
-Usage
+2. ** Search Locations **
 
-View Roads:
+- Enter queries (e.g., "Phnom Penh") in the search bar.
 
-The map loads road segments within Cambodia’s bounds (10–14.5°N, 102–108°E) from the initial RoadGraph build.
-Zoom/pan to explore the network.
+- Select suggestions to place markers (start or end points).
 
+3. ** Set Route Points **
 
-Search Locations:
+- Click map to set start (A) and end (B) points.
 
-Enter a query (e.g., "Phnom Penh") in the search bar on the map page.
-Select suggestions or click "Search" to place a marker (start or end point).
+- Drag markers to adjust positions.
 
+4. ** Calculate Route **
 
-Set Route Points:
+- Click Get Route to compute the shortest path.
 
-Click the map to set start (A) and end (B) points, or enter coordinates manually.
-Drag markers to adjust positions.
+- View distance and travel times for all travel modes.
 
+5. ** Reset Map **
 
-Calculate Route:
+- Click Reset to clear markers, routes, and inputs.
 
-Click "Get Route" to compute the shortest path using the backend API.
-View distance and travel times (car, motorcycle, bicycle, walking) in the info box.
+---
 
+### 📂 Project Structure
 
-Reset Map:
-
-Click "Reset" to clear markers, routes, and inputs.
-
-
-
-Project Structure
+```text
 ROAD_TRACKING_PROJECT/
-├── cache/                      # Django cache (generated, ignored)
-├── caches/                     # RoadGraph cache (generated, ignored)
-│   ├── rtree_data/             # R-tree index files
-│   └── road_graph_cache.pkl    # Serialized graph data
-├── data/                       # Data files
-│   └── cambodia.osm            # OSM file for Cambodia
-├── logs/                       # Log files (generated, ignored)
-│   └── road_tracking_project   # Project logs
-├── tracker/                    # Tracker directory (purpose unclear, ignored if unused)
-├── __pycache__/                # Python bytecode (ignored)
-├── migrations/                 # Django migrations
-├── static/                     # Static files (if any, ignored if unused)
-├── templates/                  # HTML templates
-│   └── map.html                # Leaflet-based frontend
-├── __init__.py                 # Python package initializer
-├── admin.py                    # Django admin configuration
-├── apps.py                     # Django app configuration
-├── models.py                   # Django models (if any)
-├── road_graph.py               # RoadGraph class for graph processing
-├── tests.py                    # Test cases (if any)
-├── urls.py                     # URL routing
-├── views.py                    # API endpoints (get_roads, calculate_distance, search_location)
-├── venv/                       # Virtual environment (ignored)
-├── db.sqlite3                  # SQLite database (generated, ignored)
-├── logging_config.py           # Logging configuration
-├── manage.py                   # Django management script
-├── .gitignore                  # Git ignore file
-└── Cambodia_Road_Router_Te...  # README (this file)
+├── cache/                  # Django cache
+├── caches/                 # RoadGraph cache files
+│   ├── rtree_data/         # R-tree index
+│   └── road_graph_cache.pkl
+├── data/                   # OSM files
+│   └── cambodia.osm
+├── logs/                   # Log files
+├── templates/              # Frontend templates
+│   └── map.html
+├── static/                 # Static files (if any)
+├── road_graph.py           # RoadGraph class for graph processing
+├── views.py                # API endpoints
+├── urls.py                 # URL routing
+├── logging_config.py       # Logging configuration
+├── manage.py               # Django management script
+├── venv/                   # Virtual environment
+└── db.sqlite3              # SQLite database
+```
+---
 
-Technical Details
+### ⚙ Technical Details
 
-RoadGraph Class: Processes data/cambodia.osm to build a road network graph using the Haversine formula for edge distances, KDTree for nearest-node queries, and R-tree for spatial indexing. Generates cache files (caches/road_graph_cache.pkl, rtree_data/) on the initial build.
-Django Backend: Provides APIs (/roads/, /distance/, /search/) with caching and input validation. Integrates Nominatim for geocoding via views.py.
-JavaScript Frontend: Uses Leaflet in templates/map.html for mapping, with draggable markers, animated routes, and real-time search suggestions. Adjusts travel times based on road types and congestion.
-Initial Build: On first run, RoadGraph parses cambodia.osm, generating cache files in caches/, which are ignored by .gitignore.
+- ### RoadGraph Class 
 
+  - Parses ```cambodia.osm``` to build a graph using the Haversine formula for edge distances.
+
+  - Uses KDTree for nearest-node queries and R-tree for spatial indexing.
+
+  - Generates cache files on initial build ```(caches/road_graph_cache.pkl, rtree_data/)```.
+
+- ### Django Backend
+
+  - APIs: /roads/, /distance/, /search/
+
+  - Input validation, caching, and Nominatim integration for geocoding.
+
+- ### JavaScript Frontend
+
+  - Leaflet map with draggable markers and animated routes.
+
+  - Travel times adjusted dynamically based on road type and congestion.
+
+- ### Initial Build
+
+  - On first run, RoadGraph parses cambodia.osm and creates cache files to speed up subsequent runs.
