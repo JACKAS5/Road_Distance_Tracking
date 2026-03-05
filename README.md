@@ -162,8 +162,7 @@ ROAD_TRACKING_PROJECT/
 
 - ### Django Backend
 
-  - APIs: /roads/, /distance/, /search/
-
+  - APIs: ```/roads/```, ```/distance/```, ```/search/```
   - Input validation, caching, and Nominatim integration for geocoding.
 
 - ### JavaScript Frontend
