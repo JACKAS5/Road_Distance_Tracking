@@ -207,7 +207,6 @@ def calculate_distance(request) -> JsonResponse:
         logger.error(f"Distance calculation error: {e}", exc_info=True)
         return JsonResponse({'error': 'Failed to calculate route.'}, status=500)
 
-
 @require_GET
 def search_location(request) -> JsonResponse:
     query = request.GET.get('q', '').strip()
@@ -215,11 +214,9 @@ def search_location(request) -> JsonResponse:
         return JsonResponse({'error': 'Missing search query (parameter "q").'}, status=400)
 
     try:
-        limit = int(request.GET.get('limit', 1))
-        if limit <= 0 or limit > 50:
-            return JsonResponse({'error': 'Limit must be between 1 and 50.'}, status=400)
+        limit = min(max(int(request.GET.get('limit', 5)), 1), 50)
     except (ValueError, TypeError):
-        return JsonResponse({'error': 'Invalid limit parameter.'}, status=400)
+        limit = 5
 
     cache_key = f'search:{hashlib.md5(query.encode()).hexdigest()}:{limit}'
     cached = cache.get(cache_key)
@@ -227,21 +224,33 @@ def search_location(request) -> JsonResponse:
         return JsonResponse(cached, safe=False)
 
     url = f"https://nominatim.openstreetmap.org/search?q={requests.utils.quote(query)}&format=json&limit={limit}"
-    headers = {'User-Agent': settings.NOMINATIM_USER_AGENT}
+    headers = {
+        'User-Agent': settings.NOMINATIM_USER_AGENT,
+        'Accept-Language': 'en',
+    }
 
-    try:
-        response = requests.get(url, headers=headers, timeout=settings.NOMINATIM_TIMEOUT)
-        response.raise_for_status()
-        data = response.json()
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Request failed: {e}")
-        return JsonResponse({'error': 'Request failed'}, status=500)
+    data = []
+    for attempt in range(3):
+        try:
+            response = requests.get(url, headers=headers, timeout=settings.NOMINATIM_TIMEOUT)
+            if response.status_code == 429:
+                wait = 2 ** attempt
+                logger.warning(f"Nominatim rate limit, retrying after {wait}s...")
+                time.sleep(wait)
+                continue
+            response.raise_for_status()
+            data = response.json()
+            break
+        except requests.exceptions.RequestException as e:
+            if attempt == 2:
+                logger.error(f"Nominatim request failed after retries: {e}")
+                return JsonResponse({'error': 'Failed to reach Nominatim service.'}, status=503)
 
     results = []
     for item in data:
         try:
-            lat = float(item.get('lat'))
-            lon = float(item.get('lon'))
+            lat = float(item['lat'])
+            lon = float(item['lon'])
             if (settings.CAMBODIA_BOUNDS['min_lat'] <= lat <= settings.CAMBODIA_BOUNDS['max_lat'] and
                 settings.CAMBODIA_BOUNDS['min_lon'] <= lon <= settings.CAMBODIA_BOUNDS['max_lon']):
                 results.append({
@@ -249,8 +258,11 @@ def search_location(request) -> JsonResponse:
                     'lat': lat,
                     'lon': lon
                 })
-        except (ValueError, TypeError):
+        except (ValueError, KeyError, TypeError):
             continue
+
+    if not results:
+        return JsonResponse({'error': 'No locations found in Cambodia.'}, status=404)
 
     cache.set(cache_key, results, timeout=86400)
     return JsonResponse(results, safe=False)

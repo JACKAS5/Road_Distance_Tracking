@@ -1,8 +1,13 @@
 import os
 from pathlib import Path
+from dotenv import load_dotenv
 
 # Build paths inside the project
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Load .env variables
+BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(os.path.join(BASE_DIR, '.env'))
 
 # Ensure directories exist
 LOG_DIR = os.path.join(BASE_DIR, 'logs')
@@ -16,7 +21,10 @@ os.makedirs(DATA_DIR, exist_ok=True)
 ROAD_GRAPH_CACHE_PATH = os.path.join(CACHE_DIR, 'road_graph_cache.pkl')
 OSM_FILE_PATH = os.path.join(DATA_DIR, 'cambodia.osm')
 NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search'
-NOMINATIM_USER_AGENT = 'RoadTracker/1.0 (your-email@example.com)'  # Update with your email
+NOMINATIM_USER_AGENT = os.getenv(
+    'NOMINATIM_USER_AGENT', 
+    'RoadTracker/1.0 (default@example.com)'
+)
 NOMINATIM_TIMEOUT = 10
 CAMBODIA_BOUNDS = {
     'min_lat': 10.0,

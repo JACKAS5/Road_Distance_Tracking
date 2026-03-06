@@ -37,6 +37,23 @@ The application supports multiple travel modes (car, motorcycle, bicycle, walkin
    - User-friendly feedback messages.
 
 ---
+##---
+
+## 🖼 Screenshots
+
+### 1. Map View
+![Cambodia Road Map](screenshots/map_view.png)
+*Interactive map displaying road segments.*
+
+### 2. Route Calculation
+![Route Example](screenshots/route_example.png)
+*Shortest path with travel time estimation.*
+
+### 3. Location Search
+![Search Feature](screenshots/search_location.png)
+*Search locations via Nominatim API and place markers.*
+
+---
 
 ## 🛠 Prerequisites
 
@@ -61,6 +78,9 @@ cd cambodia-road-router/ROAD_TRACKING_PROJECT
 ```bash
 python -m venv venv
 source venv/bin/activate   # Windows: venv\Scripts\activate
+```
+```bash
+source venv/Scripts/activate # bash
 ```
 
 ### 3. Install Python Dependencies
