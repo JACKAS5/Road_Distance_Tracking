@@ -37,7 +37,6 @@ The application supports multiple travel modes (car, motorcycle, bicycle, walkin
    - User-friendly feedback messages.
 
 ---
-##---
 
 ## 🖼 Screenshots
 
